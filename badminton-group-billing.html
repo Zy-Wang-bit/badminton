@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>羽毛球场地费用分摊系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .panel h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .member-list {
+            margin-bottom: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .member-item {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            margin-bottom: 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .member-item:hover {
+            background: #e9ecef;
+        }
+
+        .member-item:hover .delete-member-btn {
+            opacity: 1;
+        }
+
+        .member-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .member-name {
+            font-weight: 500;
+            color: #333;
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            cursor: pointer;
+            min-width: 0;
+            flex-shrink: 1;
+        }
+
+        .member-name:focus {
+            outline: 2px solid #667eea;
+            border-radius: 4px;
+            padding: 2px 5px;
+        }
+
+        .member-balance {
+            font-weight: bold;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .balance-positive {
+            color: #28a745;
+        }
+
+        .balance-negative {
+            color: #dc3545;
+        }
+
+        .delete-member-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 10;
+            margin-top: 5px;
+            width: 100%;
+        }
+
+        .delete-member-btn:hover {
+            background: #c82333;
+        }
+
+        .delete-member-btn:active {
+            transform: scale(0.98);
+        }
+
+        .add-member-section {
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .add-member-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .checkbox-item:hover {
+            background: #e9ecef;
+        }
+
+        .checkbox-item.selected {
+            background: #e7f3ff;
+            border-color: #667eea;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            margin: 0;
+            margin-right: 8px;
+        }
+
+        .checkbox-item label {
+            cursor: pointer;
+            font-size: 13px;
+            user-select: none;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+        }
+
+        .result-box {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            animation: slideIn 0.5s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-box h3 {
+            color: #0066cc;
+            margin-bottom: 10px;
+        }
+
+        .result-box p {
+            color: #333;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .result-amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0066cc;
+            margin: 10px 0;
+        }
+
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .history-date {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .history-participants {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .history-amount {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card-blue {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .stat-card-green {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .stat-card-orange {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #333;
+        }
+
+        .stat-card-title {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-card-value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .verification-box {
+            padding: 12px;
+            background: #fff3cd;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .verification-box p {
+            font-size: 13px;
+            color: #856404;
+            margin: 3px 0;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .member-list {
+                grid-template-columns: 1fr;
+            }
+
+            .checkbox-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏸 羽毛球场地费用分摊系统</h1>
+            <p>多人共享储值卡 - 费用自动计算与记录</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 左侧：成员管理和统计 -->
+            <div class="panel">
+                <h2>👥 成员管理</h2>
+                
+                <!-- 添加成员 -->
+                <div class="add-member-section">
+                    <input type="text" id="newMemberName" class="add-member-input" placeholder="输入新成员姓名">
+                    <input type="number" id="newMemberBalance" class="add-member-input" placeholder="输入新成员余额（默认0）" value="0" step="0.01">
+                    <button class="btn btn-primary btn-small" onclick="addMember()">➕ 添加成员</button>
+                </div>
+
+                <!-- 成员列表 -->
+                <div class="member-list" id="memberList"></div>
+                
+                <!-- 统计数据 -->
+                <div class="stats-grid">
+                    <div class="stat-card stat-card-blue">
+                        <div class="stat-card-title">💳 卡内余额</div>
+                        <div class="stat-card-value" id="cardBalanceDisplay">¥0.00</div>
+                    </div>
+                    <div class="stat-card stat-card-green">
+                        <div class="stat-card-title">💰 现金总额</div>
+                        <div class="stat-card-value" id="cashTotalDisplay">¥0.00</div>
+                    </div>
+                </div>
+
+                <div class="stat-card stat-card-orange" style="margin-bottom: 15px;">
+                    <div class="stat-card-title">👥 成员余额总和</div>
+                    <div class="stat-card-value" id="membersTotalDisplay">¥0.00</div>
+                </div>
+
+                <!-- 验证信息 -->
+                <div class="verification-box" id="verificationBox">
+                    <p><strong>✓ 账目验证</strong></p>
+                    <p id="verificationText">成员余额总和 = 卡内余额 + 现金总额</p>
+                </div>
+                
+                <div style="border-top: 2px solid #eee; padding-top: 15px; margin-top: 15px;">
+                    <div class="file-input-wrapper">
+                        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                            📁 加载记录文件
+                        </button>
+                        <input type="file" id="fileInput" accept=".json">
+                    </div>
+                    <button class="btn btn-success" onclick="downloadRecord()">
+                        💾 下载记录文件
+                    </button>
+                </div>
+            </div>
+
+            <!-- 右侧：操作区域 -->
+            <div>
+                <div class="panel">
+                    <h2>📝 本次活动记录</h2>
+                    
+                    <div class="input-group">
+                        <label>选择参与人员：</label>
+                        <div class="checkbox-grid" id="memberCheckboxes"></div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>临时人员数量：</label>
+                        <input type="number" id="tempMembers" placeholder="无临时人员请输入0" value="0" min="0" step="1">
+                        <small style="color: #666; font-size: 12px; margin-top: 5px; display: block;">临时人员固定支付¥40现金，多付的钱平均分配给在场固定成员</small>
+                    </div>
+
+                    <div class="input-group">
+                        <label>总消费金额 (¥)：</label>
+                        <input type="number" id="totalCost" placeholder="请输入本次消费金额" step="0.01" min="0">
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="calculateExpense()" style="flex: 2;">
+                            ✓ 计算并记录
+                        </button>
+                        <button class="btn btn-secondary" onclick="resetCurrent()">
+                            ↺ 重置
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 计算结果 -->
+                <div id="resultBox" style="display: none;"></div>
+
+                <!-- 历史记录 -->
+                <div class="panel" id="historyPanel" style="display: none;">
+                    <h2>📊 历史记录</h2>
+                    <div class="history-list" id="historyList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化数据
+        let members = [];
+        let history = [];
+        let selectedMembers = new Set();
+        let cashTotal = 0; // 现金总额（包含临时人员支付和成员退出贡献）
+        let cardBalance = 10000; // 卡内余额，初始100000
+        let nextMemberId = 1;
+
+        // 页面加载时从localStorage读取数据
+        window.onload = function() {
+            loadFromLocalStorage();
+            renderMembers();
+            renderCheckboxes();
+            renderHistory();
+            updateStats();
+        };
+
+        // 从localStorage加载数据
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('badmintonData');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    if (data.members) members = data.members;
+                    if (data.history) history = data.history;
+                    if (data.cashTotal !== undefined) cashTotal = data.cashTotal;
+                    if (data.cardBalance !== undefined) cardBalance = data.cardBalance;
+                    if (data.nextMemberId !== undefined) nextMemberId = data.nextMemberId;
+                } catch (e) {
+                    console.error('加载数据失败:', e);
+                }
+            }
+        }
+
+        // 保存到localStorage
+        function saveToLocalStorage() {
+            const data = {
+                members: members,
+                history: history,
+                cashTotal: cashTotal,
+                cardBalance: cardBalance,
+                nextMemberId: nextMemberId,
+                lastUpdate: new Date().toISOString()
+            };
+            localStorage.setItem('badmintonData', JSON.stringify(data));
+        }
+
+        // 添加成员
+        function addMember() {
+            const nameInput = document.getElementById('newMemberName');
+            const balanceInput = document.getElementById('newMemberBalance');
+            const name = nameInput.value.trim();
+            const balance = parseFloat(balanceInput.value) || 0;
+            
+            if (!name) {
+                alert('请输入成员姓名！');
+                return;
+            }
+
+            // 检查名字是否重复
+            if (members.some(m => m.name === name)) {
+                alert('该成员已存在！');
+                return;
+            }
+
+            const newMember = {
+                id: nextMemberId++,
+                name: name,
+                balance: balance
+            };
+
+            members.push(newMember);
+            nameInput.value = '';
+            balanceInput.value = '0';
+
+            saveToLocalStorage();
+            renderMembers();
+            renderCheckboxes();
+            updateStats();
+
+            alert(`成员 ${name} 添加成功！余额：¥${balance.toFixed(2)}`);
+        }
+
+        // 删除成员
+        function deleteMember(id) {
+            const member = members.find(m => m.id === id);
+            if (!member) return;
+
+            const confirmMsg = `确定要删除成员"${member.name}"吗？\n\n当前余额：¥${member.balance.toFixed(2)}\n${member.balance < 0 ? '该成员需要贡献 ¥' + Math.abs(member.balance).toFixed(2) + ' 现金' : '该成员将获得 ¥' + member.balance.toFixed(2) + ' 现金'}`;
+            
+            if (!confirm(confirmMsg)) return;
+
+            // 如果余额为负数，成员退出时需要贡献现金
+            // 如果余额为正数，成员退出时获得现金
+            cashTotal -= member.balance;
+
+            members = members.filter(m => m.id !== id);
+
+            saveToLocalStorage();
+            renderMembers();
+            renderCheckboxes();
+            updateStats();
+
+            alert(`成员"${member.name}"已删除！`);
+        }
+
+        // 渲染成员列表
+        function renderMembers() {
+            const memberList = document.getElementById('memberList');
+            memberList.innerHTML = '';
+            
+            if (members.length === 0) {
+                memberList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px; grid-column: 1/-1;">暂无成员，请添加成员</p>';
+                return;
+            }
+
+            members.forEach(member => {
+                const div = document.createElement('div');
+                div.className = 'member-item';
+                
+                const balanceClass = member.balance >= 0 ? 'balance-positive' : 'balance-negative';
+                
+                div.innerHTML = `
+                    <div class="member-info">
+                        <input type="text" class="member-name" value="${member.name}" 
+                               onchange="updateMemberName(${member.id}, this.value)">
+                        <span class="member-balance ${balanceClass}">¥${member.balance.toFixed(2)}</span>
+                    </div>
+                    <button class="delete-member-btn" onclick="event.stopPropagation(); deleteMember(${member.id})">删除</button>
+                `;
+                
+                memberList.appendChild(div);
+            });
+        }
+
+        // 更新成员名称
+        function updateMemberName(id, newName) {
+            newName = newName.trim();
+            if (!newName) {
+                alert('成员姓名不能为空！');
+                renderMembers();
+                return;
+            }
+
+            // 检查是否与其他成员重名
+            if (members.some(m => m.id !== id && m.name === newName)) {
+                alert('该姓名已被使用！');
+                renderMembers();
+                return;
+            }
+
+            const member = members.find(m => m.id === id);
+            if (member) {
+                member.name = newName;
+                saveToLocalStorage();
+                renderCheckboxes();
+            }
+        }
+
+        // 渲染复选框
+        function renderCheckboxes() {
+            const container = document.getElementById('memberCheckboxes');
+            container.innerHTML = '';
+            
+            if (members.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px; grid-column: 1/-1;">请先添加成员</p>';
+                return;
+            }
+
+            members.forEach(member => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.id = `checkbox-${member.id}`;
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `member-${member.id}`;
+                checkbox.value = member.id;
+                checkbox.onchange = function() {
+                    toggleMember(member.id);
+                };
+                
+                const label = document.createElement('label');
+                label.htmlFor = `member-${member.id}`;
+                label.textContent = member.name;
+                
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                div.onclick = function(e) {
+                    if (e.target !== checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        toggleMember(member.id);
+                    }
+                };
+                
+                container.appendChild(div);
+            });
+        }
+
+        // 切换成员选择
+        function toggleMember(id) {
+            if (selectedMembers.has(id)) {
+                selectedMembers.delete(id);
+            } else {
+                selectedMembers.add(id);
+            }
+            
+            const checkboxDiv = document.getElementById(`checkbox-${id}`);
+            if (checkboxDiv) {
+                if (selectedMembers.has(id)) {
+                    checkboxDiv.classList.add('selected');
+                } else {
+                    checkboxDiv.classList.remove('selected');
+                }
+            }
+        }
+
+        // 更新统计数据
+        function updateStats() {
+            // 更新卡内余额显示
+            document.getElementById('cardBalanceDisplay').textContent = `¥${cardBalance.toFixed(2)}`;
+            
+            // 更新现金总额显示
+            document.getElementById('cashTotalDisplay').textContent = `¥${cashTotal.toFixed(2)}`;
+            
+            // 计算成员余额总和
+            const membersTotal = members.reduce((sum, member) => sum + member.balance, 0);
+            document.getElementById('membersTotalDisplay').textContent = `¥${membersTotal.toFixed(2)}`;
+            
+            // 验证账目
+            const expectedTotal = cardBalance + cashTotal;
+            const difference = Math.abs(membersTotal - expectedTotal);
+            
+            const verificationText = document.getElementById('verificationText');
+            if (difference < 0.01) {
+                verificationText.innerHTML = `✓ 账目平衡：¥${membersTotal.toFixed(2)} = ¥${cardBalance.toFixed(2)} + ¥${cashTotal.toFixed(2)}`;
+                verificationText.style.color = '#155724';
+            } else {
+                verificationText.innerHTML = `⚠ 账目差异：¥${difference.toFixed(2)}<br>成员总和：¥${membersTotal.toFixed(2)} | 预期：¥${expectedTotal.toFixed(2)}`;
+                verificationText.style.color = '#856404';
+            }
+        }
+
+        // 计算费用
+        function calculateExpense() {
+            if (members.length === 0) {
+                alert('请先添加成员！');
+                return;
+            }
+
+            if (selectedMembers.size === 0) {
+                alert('请至少选择一个参与人员！');
+                return;
+            }
+
+            const totalCostInput = document.getElementById('totalCost');
+            const cost = parseFloat(totalCostInput.value);
+            
+            if (isNaN(cost) || cost <= 0) {
+                alert('请输入有效的消费金额！');
+                return;
+            }
+
+            const tempMembersInput = document.getElementById('tempMembers');
+            const temporaryCount = parseInt(tempMembersInput.value) || 0;
+            
+            if (temporaryCount < 0) {
+                alert('临时人员数量不能为负数！');
+                return;
+            }
+
+            const fixedMemberCount = selectedMembers.size;
+            const totalPeople = fixedMemberCount + temporaryCount;
+            
+            // 总费用平均分配给所有人（固定成员+临时人员）
+            const perPersonCost = cost / totalPeople;
+            
+            // 临时人员支付40元/人（固定金额）
+            const temporaryPayment = 40;
+            const totalTemporaryPayment = temporaryPayment * temporaryCount;
+            
+            // 临时人员应该支付的金额（按人头平摊）
+            const temporaryShouldPay = perPersonCost * temporaryCount;
+            
+            // 临时人员多付的金额（需要分给固定成员）
+            const temporaryExtra = totalTemporaryPayment - temporaryShouldPay;
+            
+            // 临时人员多付的钱平均分给在场的固定成员
+            const temporaryIncomePerFixed = temporaryCount > 0 ? temporaryExtra / fixedMemberCount : 0;
+            
+            // 固定成员实际支付 = 应付费用 - 临时人员补贴
+            const fixedMemberActualCost = perPersonCost - temporaryIncomePerFixed;
+            
+            // 更新余额
+            members.forEach(member => {
+                if (selectedMembers.has(member.id)) {
+                    member.balance -= fixedMemberActualCost;
+                }
+            });
+
+            // 更新现金总额（临时人员支付的现金）
+            cashTotal += totalTemporaryPayment;
+
+            // 更新卡内余额（扣除消费）
+            cardBalance -= cost;
+
+            // 记录历史
+            const participantNames = Array.from(selectedMembers).map(id => 
+                members.find(m => m.id === id).name
+            );
+
+            const record = {
+                timestamp: new Date().toISOString(),
+                date: new Date().toLocaleString('zh-CN'),
+                participants: participantNames,
+                totalCost: cost,
+                temporaryCount: temporaryCount,
+                totalPeople: totalPeople,
+                perPersonCost: perPersonCost,
+                temporaryPayment: temporaryPayment,
+                totalTemporaryPayment: totalTemporaryPayment,
+                temporaryShouldPay: temporaryShouldPay,
+                temporaryExtra: temporaryExtra,
+                temporaryIncomePerFixed: temporaryIncomePerFixed,
+                fixedMemberActualCost: fixedMemberActualCost,
+                cardBalanceAfter: cardBalance,
+                cashTotalAfter: cashTotal
+            };
+
+            history.unshift(record);
+
+            // 保存数据
+            saveToLocalStorage();
+
+            // 更新显示
+            renderMembers();
+            updateStats();
+            showResult(record);
+            renderHistory();
+        }
+
+        // 显示计算结果
+        function showResult(record) {
+            const resultBox = document.getElementById('resultBox');
+            resultBox.style.display = 'block';
+            resultBox.className = 'result-box';
+            
+            let temporaryInfo = '';
+            if (record.temporaryCount > 0) {
+                temporaryInfo = `
+                    <div style="background: rgba(255,255,255,0.8); padding: 12px; border-radius: 6px; margin-top: 10px;">
+                        <p style="color: #e91e63; font-weight: bold; margin-bottom: 5px;">👤 临时人员：${record.temporaryCount}人</p>
+                        <p><strong>临时人员支付：</strong>¥${record.temporaryPayment.toFixed(2)}/人 × ${record.temporaryCount} = ¥${record.totalTemporaryPayment.toFixed(2)}（现金）</p>
+                        <p><strong>临时人员应付：</strong>¥${record.temporaryShouldPay.toFixed(2)}（按人头平摊）</p>
+                        <p style="color: #28a745;"><strong>多付金额：</strong>¥${record.temporaryExtra.toFixed(2)} → 平均分给${record.participants.length}个固定成员</p>
+                        <p style="color: #28a745;"><strong>固定成员每人获得：</strong>¥${record.temporaryIncomePerFixed.toFixed(2)}</p>
+                    </div>
+                `;
+            }
+            
+            resultBox.innerHTML = `
+                <h3>✅ 本次分摊结果</h3>
+                <p><strong>固定成员参与：</strong>${record.participants.join('、')}</p>
+                <p><strong>总消费：</strong>¥${record.totalCost.toFixed(2)}</p>
+                <p><strong>总人数：</strong>${record.totalPeople}人 (固定${record.participants.length}人${record.temporaryCount > 0 ? ' + 临时' + record.temporaryCount + '人' : ''})</p>
+                <p><strong>人均应付：</strong>¥${record.perPersonCost.toFixed(2)}</p>
+                ${temporaryInfo}
+                <div class="result-amount" style="border-top: 2px dashed rgba(0,0,0,0.1); padding-top: 10px; margin-top: 10px;">
+                    固定成员实际支付：¥${record.fixedMemberActualCost.toFixed(2)}/人
+                </div>
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);">
+                    <p style="font-size: 13px;"><strong>消费后卡内余额：</strong>¥${record.cardBalanceAfter.toFixed(2)}</p>
+                    <p style="font-size: 13px;"><strong>消费后现金总额：</strong>¥${record.cashTotalAfter.toFixed(2)}</p>
+                </div>
+                <p style="font-size: 12px; color: #666; margin-top: 10px;">记录时间：${record.date}</p>
+            `;
+        }
+
+        // 渲染历史记录
+        function renderHistory() {
+            const historyPanel = document.getElementById('historyPanel');
+            const historyList = document.getElementById('historyList');
+            
+            if (history.length === 0) {
+                historyPanel.style.display = 'none';
+                return;
+            }
+
+            historyPanel.style.display = 'block';
+            historyList.innerHTML = '';
+            
+            history.forEach(record => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                
+                let tempInfo = '';
+                if (record.temporaryCount && record.temporaryCount > 0) {
+                    tempInfo = ` | 临时${record.temporaryCount}人(¥${record.totalTemporaryPayment.toFixed(2)})`;
+                }
+                
+                const actualCost = record.fixedMemberActualCost || record.perPersonCost;
+                
+                div.innerHTML = `
+                    <div class="history-date">${record.date}</div>
+                    <div class="history-participants">参与：${record.participants.join('、')}${tempInfo}</div>
+                    <div class="history-amount">总计：¥${record.totalCost.toFixed(2)} | 固定成员：¥${actualCost.toFixed(2)}/人</div>
+                `;
+                historyList.appendChild(div);
+            });
+        }
+
+        // 重置当前输入
+        function resetCurrent() {
+            selectedMembers.clear();
+            document.getElementById('totalCost').value = '';
+            document.getElementById('tempMembers').value = '0';
+            document.getElementById('resultBox').style.display = 'none';
+            
+            // 清除所有复选框
+            document.querySelectorAll('.checkbox-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+        }
+
+        // 文件上传
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    if (data.members && Array.isArray(data.members)) {
+                        members = data.members;
+                        if (data.history) history = data.history;
+                        if (data.cashTotal !== undefined) cashTotal = data.cashTotal;
+                        if (data.cardBalance !== undefined) cardBalance = data.cardBalance;
+                        if (data.nextMemberId !== undefined) {
+                            nextMemberId = data.nextMemberId;
+                        } else {
+                            // 兼容旧数据，计算下一个ID
+                            nextMemberId = members.length > 0 ? Math.max(...members.map(m => m.id)) + 1 : 1;
+                        }
+                        
+                        saveToLocalStorage();
+                        renderMembers();
+                        renderCheckboxes();
+                        renderHistory();
+                        updateStats();
+                        resetCurrent();
+                        
+                        alert('数据加载成功！');
+                    } else {
+                        alert('文件格式错误！');
+                    }
+                } catch (error) {
+                    alert('文件解析失败: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            
+            // 清除文件输入，允许重复选择同一文件
+            e.target.value = '';
+        });
+
+        // 下载记录文件
+        function downloadRecord() {
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const data = {
+                members: members,
+                history: history,
+                cashTotal: cashTotal,
+                cardBalance: cardBalance,
+                nextMemberId: nextMemberId,
+                lastUpdate: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `badminton-${timestamp}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('记录文件已下载！');
+        }
+    </script>
+</body>
+</html>
