@@ -42,6 +42,30 @@
             font-size: 14px;
         }
 
+        .sync-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 15px;
+            font-weight: 600;
+        }
+
+        .sync-status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .sync-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .sync-status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
         .main-content {
             display: grid;
             grid-template-columns: 1fr 2fr;
@@ -201,6 +225,17 @@
             box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
         }
 
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
+        }
+
         .btn-secondary {
             background: #6c757d;
             color: white;
@@ -213,6 +248,12 @@
         .btn-small {
             padding: 6px 12px;
             font-size: 13px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
         }
 
         .file-input-wrapper {
@@ -422,6 +463,36 @@
             margin: 3px 0;
         }
 
+        .gist-config {
+            padding: 15px;
+            background: #f0f8ff;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .gist-config h3 {
+            font-size: 14px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .gist-config input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .gist-config small {
+            display: block;
+            color: #666;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+
         @media (max-width: 768px) {
             .main-content {
                 grid-template-columns: 1fr;
@@ -445,7 +516,9 @@
     <div class="container">
         <div class="header">
             <h1>🏸 羽毛球场地费用分摊系统</h1>
-            <p>多人共享储值卡 - 费用自动计算与记录</p>
+            <p>多人共享储值卡 - 费用自动计算与记录
+                <span id="syncStatus" class="sync-status" style="display: none;"></span>
+            </p>
         </div>
 
         <div class="main-content">
@@ -453,6 +526,16 @@
             <div class="panel">
                 <h2>👥 成员管理</h2>
                 
+                <!-- Gist配置 -->
+                <div class="gist-config">
+                    <h3>☁️ 云端同步设置</h3>
+                    <input type="password" id="githubToken" placeholder="GitHub Token" value="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">
+                    <small>Token会保存在浏览器本地，请妥善保管</small>
+                    <input type="text" id="gistId" placeholder="Gist ID" value="37d771bfb83331c087782545b0ca1154">
+                    <input type="text" id="gistFilename" placeholder="文件名" value="badminton.json">
+                    <button class="btn btn-primary btn-small" onclick="saveGistConfig()">💾 保存配置</button>
+                </div>
+
                 <!-- 添加成员 -->
                 <div class="add-member-section">
                     <input type="text" id="newMemberName" class="add-member-input" placeholder="输入新成员姓名">
@@ -487,14 +570,20 @@
                 </div>
                 
                 <div style="border-top: 2px solid #eee; padding-top: 15px; margin-top: 15px;">
+                    <button class="btn btn-warning" onclick="syncToGist()" id="syncBtn">
+                        ☁️ 同步到云端
+                    </button>
+                    <button class="btn btn-primary" onclick="loadFromGist()">
+                        ☁️ 从云端加载
+                    </button>
                     <div class="file-input-wrapper">
-                        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
-                            📁 加载记录文件
+                        <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
+                            📁 从文件加载
                         </button>
                         <input type="file" id="fileInput" accept=".json">
                     </div>
                     <button class="btn btn-success" onclick="downloadRecord()">
-                        💾 下载记录文件
+                        💾 下载到本地
                     </button>
                 </div>
             </div>
@@ -547,18 +636,164 @@
         let members = [];
         let history = [];
         let selectedMembers = new Set();
-        let cashTotal = 0; // 现金总额（包含临时人员支付和成员退出贡献）
-        let cardBalance = 10000; // 卡内余额，初始100000
+        let cashTotal = 0;
+        let cardBalance = 10000;
         let nextMemberId = 1;
 
-        // 页面加载时从localStorage读取数据
-        window.onload = function() {
-            loadFromLocalStorage();
-            renderMembers();
-            renderCheckboxes();
-            renderHistory();
-            updateStats();
+        // Gist配置
+        let gistConfig = {
+            token: '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',
+            gistId: '37d771bfb83331c087782545b0ca1154',
+            filename: 'badminton.json'
         };
+
+        // 页面加载时初始化
+        window.onload = function() {
+            loadGistConfig();
+            loadFromGist(); // 自动从云端加载
+        };
+
+        // 保存Gist配置
+        function saveGistConfig() {
+            gistConfig.token = document.getElementById('githubToken').value.trim();
+            gistConfig.gistId = document.getElementById('gistId').value.trim();
+            gistConfig.filename = document.getElementById('gistFilename').value.trim();
+            
+            localStorage.setItem('gistConfig', JSON.stringify(gistConfig));
+            alert('云端配置已保存！');
+        }
+
+        // 加载Gist配置
+        function loadGistConfig() {
+            const saved = localStorage.getItem('gistConfig');
+            if (saved) {
+                try {
+                    gistConfig = JSON.parse(saved);
+                    document.getElementById('githubToken').value = gistConfig.token;
+                    document.getElementById('gistId').value = gistConfig.gistId;
+                    document.getElementById('gistFilename').value = gistConfig.filename;
+                } catch (e) {
+                    console.error('加载Gist配置失败:', e);
+                }
+            }
+        }
+
+        // 显示同步状态
+        function showSyncStatus(message, type) {
+            const statusEl = document.getElementById('syncStatus');
+            statusEl.textContent = message;
+            statusEl.className = `sync-status ${type}`;
+            statusEl.style.display = 'inline-block';
+            
+            if (type !== 'loading') {
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // 从Gist加载数据
+        async function loadFromGist() {
+            try {
+                showSyncStatus('正在从云端加载...', 'loading');
+                
+                const url = `https://gist.githubusercontent.com/${gistConfig.gistId.split('/')[0]}/${gistConfig.gistId}/raw/${gistConfig.filename}`;
+                const response = await fetch(url, {
+                    cache: 'no-cache'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.members && Array.isArray(data.members)) {
+                    members = data.members;
+                    if (data.history) history = data.history;
+                    if (data.cashTotal !== undefined) cashTotal = data.cashTotal;
+                    if (data.cardBalance !== undefined) cardBalance = data.cardBalance;
+                    if (data.nextMemberId !== undefined) {
+                        nextMemberId = data.nextMemberId;
+                    } else {
+                        nextMemberId = members.length > 0 ? Math.max(...members.map(m => m.id)) + 1 : 1;
+                    }
+                    
+                    saveToLocalStorage();
+                    renderMembers();
+                    renderCheckboxes();
+                    renderHistory();
+                    updateStats();
+                    resetCurrent();
+                    
+                    showSyncStatus('✓ 从云端加载成功', 'success');
+                } else {
+                    throw new Error('数据格式错误');
+                }
+            } catch (error) {
+                console.error('从Gist加载失败:', error);
+                showSyncStatus('✗ 加载失败: ' + error.message, 'error');
+                
+                // 加载失败时从localStorage加载
+                loadFromLocalStorage();
+                renderMembers();
+                renderCheckboxes();
+                renderHistory();
+                updateStats();
+            }
+        }
+
+        // 同步到Gist
+        async function syncToGist() {
+            if (!gistConfig.token || !gistConfig.gistId || !gistConfig.filename) {
+                alert('请先配置GitHub Token、Gist ID和文件名！');
+                return;
+            }
+
+            try {
+                const syncBtn = document.getElementById('syncBtn');
+                syncBtn.disabled = true;
+                showSyncStatus('正在同步到云端...', 'loading');
+
+                const data = {
+                    members: members,
+                    history: history,
+                    cashTotal: cashTotal,
+                    cardBalance: cardBalance,
+                    nextMemberId: nextMemberId,
+                    lastUpdate: new Date().toISOString()
+                };
+
+                const response = await fetch(`https://api.github.com/gists/${gistConfig.gistId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `token ${gistConfig.token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        files: {
+                            [gistConfig.filename]: {
+                                content: JSON.stringify(data, null, 2)
+                            }
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP ${response.status}`);
+                }
+
+                showSyncStatus('✓ 同步成功', 'success');
+                saveToLocalStorage();
+            } catch (error) {
+                console.error('同步到Gist失败:', error);
+                showSyncStatus('✗ 同步失败: ' + error.message, 'error');
+                alert('同步失败：' + error.message + '\n\n请检查：\n1. Token是否正确\n2. Token是否有gist权限\n3. Gist ID是否正确');
+            } finally {
+                document.getElementById('syncBtn').disabled = false;
+            }
+        }
 
         // 从localStorage加载数据
         function loadFromLocalStorage() {
@@ -602,7 +837,6 @@
                 return;
             }
 
-            // 检查名字是否重复
             if (members.some(m => m.name === name)) {
                 alert('该成员已存在！');
                 return;
@@ -635,10 +869,7 @@
             
             if (!confirm(confirmMsg)) return;
 
-            // 如果余额为负数，成员退出时需要贡献现金
-            // 如果余额为正数，成员退出时获得现金
             cashTotal -= member.balance;
-
             members = members.filter(m => m.id !== id);
 
             saveToLocalStorage();
@@ -687,7 +918,6 @@
                 return;
             }
 
-            // 检查是否与其他成员重名
             if (members.some(m => m.id !== id && m.name === newName)) {
                 alert('该姓名已被使用！');
                 renderMembers();
@@ -762,17 +992,12 @@
 
         // 更新统计数据
         function updateStats() {
-            // 更新卡内余额显示
             document.getElementById('cardBalanceDisplay').textContent = `¥${cardBalance.toFixed(2)}`;
-            
-            // 更新现金总额显示
             document.getElementById('cashTotalDisplay').textContent = `¥${cashTotal.toFixed(2)}`;
             
-            // 计算成员余额总和
             const membersTotal = members.reduce((sum, member) => sum + member.balance, 0);
             document.getElementById('membersTotalDisplay').textContent = `¥${membersTotal.toFixed(2)}`;
             
-            // 验证账目
             const expectedTotal = cardBalance + cashTotal;
             const difference = Math.abs(membersTotal - expectedTotal);
             
@@ -817,39 +1042,23 @@
             const fixedMemberCount = selectedMembers.size;
             const totalPeople = fixedMemberCount + temporaryCount;
             
-            // 总费用平均分配给所有人（固定成员+临时人员）
             const perPersonCost = cost / totalPeople;
-            
-            // 临时人员支付40元/人（固定金额）
             const temporaryPayment = 40;
             const totalTemporaryPayment = temporaryPayment * temporaryCount;
-            
-            // 临时人员应该支付的金额（按人头平摊）
             const temporaryShouldPay = perPersonCost * temporaryCount;
-            
-            // 临时人员多付的金额（需要分给固定成员）
             const temporaryExtra = totalTemporaryPayment - temporaryShouldPay;
-            
-            // 临时人员多付的钱平均分给在场的固定成员
             const temporaryIncomePerFixed = temporaryCount > 0 ? temporaryExtra / fixedMemberCount : 0;
-            
-            // 固定成员实际支付 = 应付费用 - 临时人员补贴
             const fixedMemberActualCost = perPersonCost - temporaryIncomePerFixed;
             
-            // 更新余额
             members.forEach(member => {
                 if (selectedMembers.has(member.id)) {
                     member.balance -= fixedMemberActualCost;
                 }
             });
 
-            // 更新现金总额（临时人员支付的现金）
             cashTotal += totalTemporaryPayment;
-
-            // 更新卡内余额（扣除消费）
             cardBalance -= cost;
 
-            // 记录历史
             const participantNames = Array.from(selectedMembers).map(id => 
                 members.find(m => m.id === id).name
             );
@@ -874,10 +1083,7 @@
 
             history.unshift(record);
 
-            // 保存数据
             saveToLocalStorage();
-
-            // 更新显示
             renderMembers();
             updateStats();
             showResult(record);
@@ -961,7 +1167,6 @@
             document.getElementById('tempMembers').value = '0';
             document.getElementById('resultBox').style.display = 'none';
             
-            // 清除所有复选框
             document.querySelectorAll('.checkbox-item').forEach(item => {
                 item.classList.remove('selected');
             });
@@ -987,7 +1192,6 @@
                         if (data.nextMemberId !== undefined) {
                             nextMemberId = data.nextMemberId;
                         } else {
-                            // 兼容旧数据，计算下一个ID
                             nextMemberId = members.length > 0 ? Math.max(...members.map(m => m.id)) + 1 : 1;
                         }
                         
@@ -1008,7 +1212,6 @@
             };
             reader.readAsText(file);
             
-            // 清除文件输入，允许重复选择同一文件
             e.target.value = '';
         });
 
@@ -1028,7 +1231,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `badminton-${timestamp}.json`;
+            a.download = `badminton-record-${timestamp}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
