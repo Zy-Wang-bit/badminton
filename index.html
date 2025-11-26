@@ -572,7 +572,7 @@
         let history = [];
         let selectedMembers = new Set();
         let cashTotal = 0; // 现金总额（包含临时人员支付和成员退出贡献）
-        let cardBalance = 10000; // 卡内余额，初始100000
+        let cardBalance = 0; // 卡内余额
         let nextMemberId = 1;
 
         // 页面加载时从localStorage读取数据
